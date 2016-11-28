@@ -207,6 +207,7 @@ var
   a: TIntegerArrayFuture.TIntArray;
 begin
   SetHeapTraceOutput('heaptrc.log');
+  Randomize;
 
   // request the first 20 numbers of the Fibonacci series
   f := TIntegerArrayFuture.Fibonacci(20);
