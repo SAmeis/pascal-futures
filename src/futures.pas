@@ -53,7 +53,7 @@
   end.
 
   As this is unit is part of any other project as any other unit, it has some
-  drawbacks to a possible compiler intrinsic future implementation.
+  drawbacks compared to a possible compiler intrinsic future implementation.
   - The future management object lifetime must be addressed
   - No automatic parallel execution optimization
   - All worker threads are notified on each future queueing
@@ -67,11 +67,14 @@
     or performance experience
 
   The default queue manager TFutureManager implements a simple but threadsafe
-  First In First Out queue and uses as many threads as the program is assigned
-  to CPU cores (withou special actions by system administration this is equal
-  the total count of cpu cores in your computer).
+  First In First Out (FIFO) queue and uses as many threads as the program is 
+  assigned to CPU cores (withou special actions by system administration this is
+  equal the total count of cpu cores in your computer).
+  However the FIFO queue implies there is no dead lock resolution. By default
+  this is no problem as each future is automatically queued after creation.
+  But if you override the @(TAbstractFuture.AfterConstruction) you SHOULD 
+  read the documentation of this method.
 }
-
 
 unit futures;
 
@@ -136,7 +139,7 @@ type
   public
     { Initialize event and add instance to future queue
 
-      If you override this method in your own future class, you may call SHOULD
+      If you override this method in your own future class, you SHOULD
       call this method.
 
       If you call it at the beginning of your own method, keep in mind, the
@@ -163,7 +166,7 @@ type
     destructor Destroy; override;
     { Thread method for result calculation
       This method encapsulates the real calulation of @DoCalculation
-      in a try..except block and sets the thred event.
+      in a try..except block and sets the thread event.
     }
     procedure ThreadCalculate;
   end;
@@ -546,7 +549,7 @@ begin
   // first clean up all remaining futures
   // then end all threads
   // and then destroy list of futures
-  // -> threads may query for future during shutdown
+  // -> threads may query for more futures during shutdown
   CleanUpFutures;
   SetThreadCount(0);
   fThreads.Free; 

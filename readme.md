@@ -47,7 +47,7 @@ the total count of cpu cores in your computer).
 ## Dependencies
 
 This package is tested with [Free Pascal](http://freepascal.org/) 3.1 and [Lazarus](http://lazarus-ide.org/) 1.7 but it should be compatible with the latest the latest stable compiler.
-It requires Lazarus to be installed as it uses the package [MultiThreadProcsLaz](http://wiki.freepascal.org/Parallel_procedures), which is part of the default Lazarus distribution, for CPU counting.
+It requires Lazarus to be installed as it uses the package [MultiThreadProcsLaz](http://wiki.freepascal.org/Parallel_procedures) for CPU counting, which is part of the default Lazarus distribution.
 The System unit contains the function [`GetCPUCount`](http://www.freepascal.org/docs-html/current/rtl/system/getcpucount.html) but this returns the count of CPUs installed in the system and not the count of CPUs the program can be executed on.
 Thus the function `GetSystemThreadCount` of unit `mtpcpu` is used.
 
