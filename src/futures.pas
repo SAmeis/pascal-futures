@@ -79,6 +79,7 @@
 unit futures;
 
 {$mode objfpc}{$H+}
+{$modeswitch nestedprocvars}
 
 interface
 
@@ -184,16 +185,22 @@ type
     function GetResult: ResultType;
   end;
 
+  { TCustomFuture }
+
   TCustomFuture = class(specialize TGenericFuture<Pointer>)
   public type
     TFutureProcedure = procedure (Data: Pointer);
     TFutureProcedureObject = procedure (Data: TObject);
     TFutureMethod = procedure (Data: Pointer) of object;
     TFutureMethodObject = procedure (Data: TObject) of object;
+    TFutureNestedProcedure = procedure (Data: Pointer) is nested;
+    TFutureNestedProcedureObject = procedure (Data: TObject) is nested;
     constructor Custom(aProc: TFutureProcedure; aData: Pointer);
     constructor Custom(aProc: TFutureProcedureObject; aData: TObject);
     constructor Custom(aMethod: TFutureMethod; aData: Pointer);
     constructor Custom(aMethod: TFutureMethodObject; aData: TObject);
+    constructor Custom(aMethod: TFutureNestedProcedure; aData: Pointer);
+    constructor Custom(aMethod: TFutureNestedProcedureObject; aData: TObject);
   public
     // get result cast to TObject
     function GetObject: TObject;
@@ -203,6 +210,7 @@ type
     fData: Pointer;
     fProc: TFutureProcedure;
     fMethod: TFutureMethod;
+    fNested: TFutureNestedProcedure;
   end;
 
   { Class for managing future queue and worker threads }
@@ -330,6 +338,22 @@ begin
   fData   := Pointer(aData);
 end;
 
+constructor TCustomFuture.Custom(aMethod: TFutureNestedProcedure; aData: Pointer
+  );
+begin
+  inherited Create;
+  fNested := aMethod;
+  fData := aData;
+end;
+
+constructor TCustomFuture.Custom(aMethod: TFutureNestedProcedureObject;
+  aData: TObject);
+begin
+  inherited Create;
+  fNested := TFutureNestedProcedure(aMethod);
+  fData := Pointer(aData);
+end;
+
 function TCustomFuture.GetObject: TObject;
 begin
   Result := TObject(GetResult);
@@ -341,7 +365,10 @@ begin
     fProc(fData)
   else
   if Assigned(fMethod) then
-    fMethod(fData);
+    fMethod(fData)
+  else
+  if Assigned(fNested) then
+    fNested(fData);
 end;
 
 { TFutureManager.TThreadFutureList }
