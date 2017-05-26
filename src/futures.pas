@@ -127,10 +127,24 @@ type
       @seealso CheckException
     }
     fFatalException: TObject;
+    { Indicates if the result will be retrieved by the caller.
+      TRUE  = the caller will not get the result and will not destroy the future
+             object
+      FALSE = the caller will retrieve the result and destroy the object
+
+      The datatype is LongBool as it's accessed with the function
+      @InterlockedExchange.
+    }
+    fTerminated: LongBool;
   strict protected
     { Calculation of future's result
       Override in descendent classes.
       This method MUST be threadsafe.
+
+      You SHOULD regulary check the value of @fTerminated. If it's TRUE, the
+      method exit the calculation. Obviously this is only relevant for rather
+      long running methods like file I/O, networking, complex mathematics and
+      so on.
     }
     procedure DoCalculation; virtual; abstract;
     { raises potentially existing exceptions
@@ -174,6 +188,11 @@ type
       during @DoCalculation.
     }
     procedure WaitFor;
+    { Sets the flag @fTerminated to TRUE removes the future from queue and
+      waits for the calculation to terminated. Afterwards, the future object
+      will be destroyed.
+    }
+    procedure Terminate; virtual;
   end;
 
   { Generic base class for futures
@@ -254,6 +273,7 @@ type
       function Pop: TAbstractFuture;
       procedure Lock;
       procedure Unlock;
+      function RemoveFuture(aFuture: TAbstractFuture): Boolean;
       property Count: SizeUInt read GetCount;
     end;
   strict protected
@@ -292,6 +312,20 @@ type
       intended to be used by main thread.
     }
     function PopFuture: TAbstractFuture;
+    { Removes a future object from the queue
+
+      This operation is THREADSAFE but may be rather slow as the queue is sorted
+      by the time the objects are added. While removing a future object, no
+      other worker thread can start working on new futures; all futures
+      currently in execution will continue.
+
+      Returns TRUE if the object was found in the queue and has been removed.
+
+      Returns FALSE if the object was not found in the queue and couldn't be
+      removed therfore. It may be either in execution by a worker thread or
+      the execution has already finished.
+    }
+    function RemoveFuture(aFuture: TAbstractFuture): Boolean;
   end;
 
 { Global Future Manager
@@ -437,6 +471,48 @@ begin
   LeaveCriticalsection(fCriticalSection);
 end;
 
+function TFutureManager.TThreadFutureList.RemoveFuture(aFuture: TAbstractFuture
+  ): Boolean;
+var
+  i: Integer;
+  newlist: TAbstractFutureList;
+  CurrentFuture: TAbstractFuture;
+begin
+  EnterCriticalsection(fCriticalSection);
+  try
+    if fList.IsEmpty() then exit(False);
+
+    Result := False;
+
+    newlist := TAbstractFutureList.Create;
+    try
+      // find all occurences of aFuture and remove them from list
+      while fList.Size() > 0 do
+      begin
+        CurrentFuture := fList.Front;
+        fList.Pop();
+        if CurrentFuture = aFuture then
+          Result := True
+        else
+          newlist.Push(CurrentFuture);
+      end;
+
+      // add all other futures in the original order
+      while newlist.Size() > 0 do
+      begin
+        CurrentFuture := newlist.Front();
+        newlist.Pop();
+        fList.Push(CurrentFuture);
+      end;
+    finally
+      newlist.Destroy;
+    end;
+
+  finally
+    LeaveCriticalsection(fCriticalSection);
+  end;
+end;
+
 { TAbstractFuture }
 
 procedure TAbstractFuture.CheckException;
@@ -462,7 +538,8 @@ end;
 procedure TAbstractFuture.ThreadCalculate;
 begin
   try
-    DoCalculation;
+    if not fTerminated then
+      DoCalculation;
   except
     on o: TObject do
       fFatalException := TObject(AcquireExceptionObject);
@@ -474,6 +551,21 @@ procedure TAbstractFuture.WaitFor;
 begin
   RTLeventWaitFor(fCalculatedEvent);
   CheckException;
+end;
+
+procedure TAbstractFuture.Terminate;
+var
+  Removed: Boolean;
+begin
+  // singal thread to not start the calculation
+  InterLockedExchange(LongInt(fTerminated), LongInt(LongBool(True)));
+  Removed := FutureManager.RemoveFuture(Self);
+  // a thread started the @DoCalculation method
+  if not Removed then
+    WaitFor;
+  // free exception if raised
+  fFatalException.Free;
+  Self.Destroy;
 end;
 
 { TFutureManager.TWorkerThread }
@@ -608,6 +700,11 @@ end;
 function TFutureManager.PopFuture: TAbstractFuture;
 begin
   Result := fFutures.Pop;
+end;
+
+function TFutureManager.RemoveFuture(aFuture: TAbstractFuture): Boolean;
+begin
+  Result := fFutures.RemoveFuture(aFuture);
 end;
 
 initialization
