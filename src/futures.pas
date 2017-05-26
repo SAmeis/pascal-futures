@@ -186,8 +186,21 @@ type
     procedure ThreadCalculate;
     { Waits for the future to finish and raises an exception if raised
       during @DoCalculation.
+
+      The future object is not destroyed; this is the oblication of the caller.
+
+      @seealso(WaitForAndDestroy)
     }
     procedure WaitFor;
+    { Waits for the future to finish and raises an exception if raised
+      during @DoCalculation.
+
+      After the calculation has finished, the future object is destroyed.
+      The object is also destroyed if an exception is raised
+
+      @seealso(WaitFor)
+    }
+    procedure WaitForAndDestroy;
     { Sets the flag @fTerminated to TRUE removes the future from queue and
       waits for the calculation to terminated. Afterwards, the future object
       will be destroyed.
@@ -551,6 +564,15 @@ procedure TAbstractFuture.WaitFor;
 begin
   RTLeventWaitFor(fCalculatedEvent);
   CheckException;
+end;
+
+procedure TAbstractFuture.WaitForAndDestroy;
+begin
+  try
+    WaitFor;
+  finally
+    Self.Destroy;
+  end;
 end;
 
 procedure TAbstractFuture.Terminate;
