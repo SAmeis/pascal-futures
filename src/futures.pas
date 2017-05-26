@@ -170,6 +170,10 @@ type
       in a try..except block and sets the thread event.
     }
     procedure ThreadCalculate;
+    { Waits for the future to finish and raises an exception if raised
+      during @DoCalculation.
+    }
+    procedure WaitFor;
   end;
 
   { Generic base class for futures
@@ -182,6 +186,12 @@ type
     { Holds the calculation result; SHOULD be set in @link(DoCalculation) }
     fResult: ResultType;
   public
+    { Waits until the calculation is done and returns the calculated result.
+      If any exception is raised duriong @DoCalculation, this exception is
+      raised in the calling thread.
+      At the end the future object is always destroyed, even if an exception is
+      raised.
+    }
     function GetResult: ResultType;
   end;
 
@@ -299,9 +309,8 @@ implementation
 
 function TGenericFuture.GetResult: ResultType;
 begin
-  RTLeventWaitFor(fCalculatedEvent);
   try
-    CheckException;
+    WaitFor;
     Result := fResult;
   finally
     Self.Destroy;
@@ -459,6 +468,12 @@ begin
       fFatalException := TObject(AcquireExceptionObject);
   end;
   RTLeventSetEvent(fCalculatedEvent);
+end;
+
+procedure TAbstractFuture.WaitFor;
+begin
+  RTLeventWaitFor(fCalculatedEvent);
+  CheckException;
 end;
 
 { TFutureManager.TWorkerThread }
