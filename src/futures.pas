@@ -249,6 +249,7 @@ type
     TFutureMethodObject = procedure (Data: TObject) of object;
     TFutureNestedProcedure = procedure (Data: Pointer) is nested;
     TFutureNestedProcedureObject = procedure (Data: TObject) is nested;
+  public
     constructor Custom(aProc: TFutureProcedure; aData: Pointer);
     constructor Custom(aProc: TFutureProcedureObject; aData: TObject);
     constructor Custom(aMethod: TFutureMethod; aData: Pointer);
