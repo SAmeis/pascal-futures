@@ -508,7 +508,6 @@ end;
 function TFutureManager.TThreadFutureList.RemoveFuture(aFuture: TAbstractFuture
   ): Boolean;
 var
-  i: Integer;
   newlist: TAbstractFutureList;
   CurrentFuture: TAbstractFuture;
 begin
