@@ -13,6 +13,10 @@
       <Title Value="rtf"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
+      <XPManifest>
+        <TextName Value="CompanyName.ProductName.AppName"/>
+        <TextDesc Value="Your application description."/>
+      </XPManifest>
     </General>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
