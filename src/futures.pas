@@ -103,6 +103,12 @@ type
   }
   TAbstractFuture = class(TObject)
   strict protected
+    { Is TRUE, if the calculation of the future ended either successfully,
+      raised an exception or was terminated.
+
+      Is set by @link(ThreadCalculate)
+    }
+    fIsFinished: Boolean;
     { Event which is set at end of calulation
       Each result retrieval method MUST wait for this event
       before returning the calculation's result. Otherwise the
@@ -152,6 +158,12 @@ type
     }
     procedure CheckException;
   public
+    { Is TRUE, if the calculation of the future ended either successfully,
+      raised an exception or was terminated.
+
+      If it's true
+    }
+    property IsFinished: Boolean read fIsFinished;
     { Initialize event and add instance to future queue
 
       If you override this method in your own future class, you SHOULD
@@ -558,6 +570,7 @@ begin
       fFatalException := TObject(AcquireExceptionObject);
   end;
   RTLeventSetEvent(fCalculatedEvent);
+  fIsFinished := True;
 end;
 
 procedure TAbstractFuture.WaitFor;
