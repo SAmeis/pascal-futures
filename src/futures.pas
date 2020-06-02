@@ -304,6 +304,9 @@ type
   strict protected
     fThreads: TListOfThreads;
     fFutures: TThreadFutureList;
+    { Returns the current count of worker threads
+    }
+    function GetThreadCount: Integer;
     { Sets the count of worker threads.
 
       This method is NOT THREADSAFE. So you SHOULD initialize the thread count
@@ -351,6 +354,11 @@ type
       the execution has already finished.
     }
     function RemoveFuture(aFuture: TAbstractFuture): Boolean;
+    { The current count of worker threads
+
+      This property is NOT THREADSAFE.
+    }
+    property ThreadCount: Integer read GetThreadCount write SetThreadCount;
   end;
 
 { Global Future Manager
@@ -632,6 +640,11 @@ begin
 end;
 
 { TFutureManager }
+
+function TFutureManager.GetThreadCount: Integer;
+begin
+  Result := fThreads.Count;
+end;
 
 procedure TFutureManager.SetThreadCount(aCount: Integer);
 var
