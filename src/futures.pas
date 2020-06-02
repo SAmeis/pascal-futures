@@ -269,6 +269,8 @@ type
 
   { Class for managing future queue and worker threads }
   TFutureManager = class(TObject)
+  public type
+    TAbstractFutureList = specialize TQueue<TAbstractFuture>;
   private type
     { Worker Thread for TAbstractFuture }
     TWorkerThread = class(TThread)
@@ -279,8 +281,6 @@ type
       procedure AfterConstruction; override;
     end;
     TListOfThreads = specialize TFPGObjectList<TWorkerThread>;
-    TAbstractFutureList = specialize TQueue<TAbstractFuture>;
-
     { Thread save queue of TAbstractFuture
 
       All public methods are THREADSAFE; this does not include constructor and
